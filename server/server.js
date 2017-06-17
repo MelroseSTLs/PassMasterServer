@@ -8,9 +8,6 @@ import * as urls from './urls';
 import * as database from './database';
 import * as options from './options';
 
-//If the user does not sign in time is set to 1
-const defaultTime = 1;
-
 //This allows me to create a server that has ssl
 /*const server = https.createServer(options, app).listen(options.PORT, function(){
     console.log("Express server listening on port " + options.PORT);
@@ -68,7 +65,10 @@ app.get(urls.passActivityDate, async function(req, res) {
   res.send(result);
 });
 
-app.listen(options.PORT);
+const server = app.listen(options.PORT, () => {
+  const { address, port } = server.address();
+  console.log(`Listening at http://${address}:${port}`);
+});
 
 process.stdin.resume();
 
@@ -76,7 +76,7 @@ process.on('SIGTERM', killProcess);
 process.on('SIGINT', killProcess);
 
 function killProcess(){
-    connection.end();
+    //connection.end();
     app.close();
     console.log("Process Exiting");
     process.exit();
