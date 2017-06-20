@@ -15,10 +15,10 @@ export const DATABASE_OPTIONS = {
   database : 'signSystem'
 };
 
-/*export const SSL_OPTIONS = {
+export const SSL_OPTIONS = {
   key: fs.readFileSync( 'server/ssl/key.pem' ),
   cert: fs.readFileSync( 'server/ssl/cert.pem' ),
-};*/
+};
 
 export const google = {
   clientID: '256030481662-me9i9pn0ltgnu7ms10783ab3he3jo1ho.apps.googleusercontent.com',
