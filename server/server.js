@@ -6,7 +6,7 @@ const app = express();
 
 import * as urls from './urls';
 import * as database from './database';
-import * as options from './options';
+import * as options from './config';
 
 //This allows me to create a server that has ssl
 /*const server = https.createServer(options, app).listen(options.PORT, function(){
@@ -18,6 +18,7 @@ app.get("/test", (req, res) => {
     res.send('{"res": "Responding"}');
 });
 
+//Database Work
 app.get(urls.userState, async function(req, res){
   const result = await database.getUserState(req.params.userId);
   res.send(result);
@@ -65,7 +66,56 @@ app.get(urls.passActivityDate, async function(req, res) {
   res.send(result);
 });
 
-const server = app.listen(options.PORT, () => {
+//Retrieve information and add user if necessary
+app.get(urls.handleSignIn, async function(req, res){
+  const result = await database.handleSignIn(req.params.id, req.params.name);
+  res.send(result);
+});
+
+//Google Auth Work
+import passport from 'passport';
+import GoogleStrategy from 'passport-google-oauth20';
+
+import { google } from './config';
+
+// Transform Google profile into user object
+const transformGoogleProfile = (profile) => ({
+  id: profile.id,
+  domain: profile.domain,
+  email: profile.emails[0].value,
+  name: profile.displayName,
+  avatar: profile.image.url,
+});
+
+// Register Google Passport strategy
+passport.use(new GoogleStrategy(google,
+  async (accessToken, refreshToken, profile, done)
+    => done(null, transformGoogleProfile(profile._json))
+));
+
+// Serialize user into the sessions
+passport.serializeUser((user, done) => done(null, user));
+
+// Deserialize user from the sessions
+passport.deserializeUser((user, done) => done(null, user));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Set up Google auth routes
+app.get('/auth/google', passport.authenticate('google', { scope: ['email profile'] }));
+
+app.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/auth/google' }),
+  (req, res) => {
+    req.user.domain === "melroseschools.com" ? req.user.valid = true : req.user.valid = false;
+    console.log(req.user);
+    res.redirect('OAuthLogin://login?user=' + JSON.stringify(req.user));
+  });
+
+
+const server = app.listen(process.env.PORT | options.PORT, () => {
   const { address, port } = server.address();
   console.log(`Listening at http://${address}:${port}`);
 });

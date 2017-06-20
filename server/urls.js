@@ -5,3 +5,5 @@ export const userActivityToday = "/getUserActivityToday/:userId";
 export const passActivityToday = "/getPassActivityToday/:passId";
 export const userActivityDate = "/getUserActivityForDate/:userId/:day/:month?/:year?";
 export const passActivityDate = "/getPassActivityForDate/:passId/:day/:month?/:year?";
+export const handleSignIn = "/handleSignIn/:id/:name";
+export const registerRoom = "/registerRoom/:id/:teacherId/:teacherName";

@@ -1,7 +1,7 @@
 const mysql = require('mysql');
 import rp from 'request-promise';
 
-import * as options from './options';
+import * as options from './config';
 
 let connection = mysql.createConnection(options.DATABASE_OPTIONS);
 
@@ -113,6 +113,10 @@ export async function signOut(user, room){
       })
   }
 
+  async function setTimeoutCounter(){
+    setTimeout(testUsersOutTime, options.MAX_TIMEOUT);
+  }
+
   async function check(){
     try{
       const user = await checkUser();
@@ -132,6 +136,7 @@ export async function signOut(user, room){
     if(valid == true){
       await signOutPass();
       await logUserSignOut(user, room);
+      setTimeoutCounter();
       return createResponse(null, "User signed out", true)
     }else{
       return (createResponse(valid, null, false))
@@ -278,8 +283,10 @@ export async function getTodayUserActivity(id){
     return(createRes(false, "Failed to access database"));
   }else{
     info.forEach((row) => {
+      row.timeIn = row.timeIn*1000;
+      row.timeOut = row.timeOut*1000;
       if(parseInt(row.timeIn) > 1) {
-        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut))*1000;
+        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut));
       }else{
         row.totalOutTime = 1;
       }
@@ -318,8 +325,10 @@ export async function getTodayPassActivity(id){
     return(createRes(false, "Failed to access database"));
   }else{
     info.forEach((row) => {
+      row.timeIn = row.timeIn*1000;
+      row.timeOut = row.timeOut*1000;
       if(parseInt(row.timeIn) > 1) {
-        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut))*1000;
+        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut));
       }else{
         row.totalOutTime = 1;
       }
@@ -373,8 +382,10 @@ export async function getDateUserActivity(day, month, year, id){
     return(createRes(false, "Failed to access database"));
   }else{
     info.forEach((row) => {
+      row.timeIn = row.timeIn*1000;
+      row.timeOut = row.timeOut*1000;
       if(parseInt(row.timeIn) > 1) {
-        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut))*1000;
+        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut));
       }else{
         row.totalOutTime = 1;
       }
@@ -428,13 +439,54 @@ export async function getDatePassActivity(day, month, year, id){
     return(createRes(false, "Failed to access database"));
   }else{
     info.forEach((row) => {
+      row.timeIn = row.timeIn*1000;
+      row.timeOut = row.timeOut*1000;
       if(parseInt(row.timeIn) > 1) {
-        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut))*1000;
+        row.totalOutTime = (parseInt(row.timeIn) - parseInt(row.timeOut));
       }else{
         row.totalOutTime = 1;
       }
     });
     return(createRes(true, info));
+  }
+}
+
+export async function handleSignIn(id, name){
+  const createRes = (booleanSuccess, message) => {
+    return {
+      success: booleanSuccess,
+      results: message
+    }
+  };
+
+  //resolve true means user was added, false means user already existed
+  async function testAndAdd(userId, userName){
+    return new Promise((resolve, reject) => {
+      connection.query("SELECT userName FROM users WHERE userId=?", [id], (error, results, fields) => {
+        if(error){
+          reject(err);
+        }else if(results.length > 0){
+          resolve(false);
+        }else{
+          connection.query("INSERT INTO users (userId, userName, userState) VALUES (?, ?, 'false')", [userId, userName], (error, results, fields) => {
+            if(error){
+              resolve(err);
+            }else{
+              resolve(true);
+            }
+          })
+        }
+      })
+    })
+  }
+
+  const addResponse = await testAndAdd(id, name);
+  if(addResponse == true){
+    return createRes(true, "New user added");
+  }else if(addResponse == false){
+    return createRes(true, "User exists");
+  }else{
+    return createRes(false, addResponse);
   }
 }
 
